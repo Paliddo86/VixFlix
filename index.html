@@ -340,7 +340,7 @@
       border: none;
     }
 
-    /* Pulsante Guarda sotto il player - SEMPRE VISIBILE */
+    /* Pulsante Guarda sotto il player */
     .watch-movie-btn {
       display: block;
       width: 100%;
@@ -437,7 +437,6 @@
 
     .episode-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       padding: 10px 12px;
       margin-bottom: 8px;
@@ -446,7 +445,6 @@
       border: 2px solid transparent;
       transition: all 0.3s ease;
       cursor: pointer;
-      gap: 10px;
     }
 
     .episode-item:hover {
@@ -475,22 +473,6 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    .episode-play-icon {
-      color: #e50914;
-      font-size: 1.2rem;
-      flex-shrink: 0;
-      opacity: 0.6;
-      transition: opacity 0.3s ease;
-    }
-
-    .episode-item:hover .episode-play-icon {
-      opacity: 1;
-    }
-
-    .episode-item.active .episode-play-icon {
-      opacity: 1;
     }
 
     @media (max-width: 768px) {
@@ -624,13 +606,13 @@
       
       <div class="player-content">
         <div>
-          <div class="video-container">
+          <div class="video-container" id="video-container">
             <iframe id="player-iframe" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    allowfullscreen>
+                    allowfullscreen
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms">
             </iframe>
           </div>
-          <!-- Pulsante Guarda per i film - SEMPRE VISIBILE -->
           <button id="watch-movie-btn" class="watch-movie-btn">
             ▶ Guarda
           </button>
@@ -771,6 +753,26 @@
       return await res.json();
     }
 
+    // Funzione per caricare un URL nell'iframe con doppio click simulato
+    function loadUrlInIframe(url) {
+      const iframe = document.getElementById('player-iframe');
+      if (!url) return;
+      
+      // Prima ricarica: carica l'URL
+      iframe.src = url;
+      
+      // Secondo "click" simulato: dopo 200ms ricarica la stessa URL
+      // Questo simula il doppio click che spesso sblocca il player
+      setTimeout(() => {
+        iframe.src = url;
+      }, 200);
+      
+      // Terzo tentativo dopo 500ms per essere sicuri
+      setTimeout(() => {
+        iframe.src = url;
+      }, 500);
+    }
+
     async function play(item) {
       currentItem = item;
       isMovie = item.title !== undefined;
@@ -786,6 +788,7 @@
       
       const watchBtn = document.getElementById('watch-movie-btn');
       const episodeSelector = document.getElementById('episode-selector');
+      const iframe = document.getElementById('player-iframe');
       
       if (isMovie) {
         const year = details.release_date ? new Date(details.release_date).getFullYear() : 'N/A';
@@ -802,12 +805,11 @@
         episodeSelector.style.display = 'none';
         currentMovieUrl = `https://vixsrc.to/movie/${id}`;
         
-        // Mostra il pulsante Guarda per i film
         watchBtn.style.display = 'block';
         watchBtn.textContent = '▶ Guarda';
         
-        // Non caricare automaticamente, aspetta il click
-        document.getElementById('player-iframe').src = '';
+        // Pulisce l'iframe
+        iframe.src = '';
         
       } else {
         const year = details.first_air_date ? new Date(details.first_air_date).getFullYear() : 'N/A';
@@ -834,10 +836,10 @@
       window.scrollTo(0, 0);
     }
 
-    // Funzione per caricare il film quando si clicca su Guarda
+    // Funzione per caricare il film con doppio click simulato
     function loadMovie() {
       if (currentMovieUrl) {
-        document.getElementById('player-iframe').src = currentMovieUrl;
+        loadUrlInIframe(currentMovieUrl);
       }
     }
 
@@ -899,25 +901,25 @@
               <div class="episode-number">Ep. ${episode.episode_number}</div>
               <div class="episode-title">${episode.name || `Episodio ${episode.episode_number}`}</div>
             </div>
-            <span class="episode-play-icon">▶</span>
           `;
           
           episodeDiv.onclick = () => {
             document.querySelectorAll('.episode-item').forEach(el => el.classList.remove('active'));
             episodeDiv.classList.add('active');
-            document.getElementById('player-iframe').src = episodeUrl;
+            // Carica l'episodio con doppio click simulato
+            loadUrlInIframe(episodeUrl);
           };
           
           episodesList.appendChild(episodeDiv);
         });
 
-        // Carica il primo episodio automaticamente dopo un breve ritardo
+        // Carica il primo episodio automaticamente con doppio click simulato
         const firstEpisode = episodesList.firstChild;
         if (firstEpisode) {
           firstEpisode.classList.add('active');
           const firstUrl = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodes[0].episode_number}`;
           setTimeout(() => {
-            document.getElementById('player-iframe').src = firstUrl;
+            loadUrlInIframe(firstUrl);
           }, 500);
         }
       } catch (error) {
