@@ -340,17 +340,17 @@
       border: none;
     }
 
-    /* Pulsante Guarda sotto il player */
+    /* Pulsante Guarda sotto il player - SEMPRE VISIBILE */
     .watch-movie-btn {
-      display: none;
+      display: block;
       width: 100%;
       margin-top: 1rem;
-      padding: 14px;
+      padding: 16px;
       background: #e50914;
       color: white;
       border: none;
       border-radius: 12px;
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -362,8 +362,12 @@
       box-shadow: 0 4px 20px rgba(229, 9, 20, 0.4);
     }
 
-    .watch-movie-btn.visible {
-      display: block;
+    .watch-movie-btn:active {
+      transform: scale(0.98);
+    }
+
+    .watch-movie-btn.hidden {
+      display: none;
     }
 
     .episode-selector {
@@ -473,7 +477,6 @@
       text-overflow: ellipsis;
     }
 
-    /* Icona play accanto all'episodio */
     .episode-play-icon {
       color: #e50914;
       font-size: 1.2rem;
@@ -627,8 +630,8 @@
                     allowfullscreen>
             </iframe>
           </div>
-          <!-- Pulsante Guarda per i film -->
-          <button id="watch-movie-btn" class="watch-movie-btn" onclick="loadMovie()">
+          <!-- Pulsante Guarda per i film - SEMPRE VISIBILE -->
+          <button id="watch-movie-btn" class="watch-movie-btn">
             ▶ Guarda
           </button>
         </div>
@@ -800,7 +803,7 @@
         currentMovieUrl = `https://vixsrc.to/movie/${id}`;
         
         // Mostra il pulsante Guarda per i film
-        watchBtn.classList.add('visible');
+        watchBtn.style.display = 'block';
         watchBtn.textContent = '▶ Guarda';
         
         // Non caricare automaticamente, aspetta il click
@@ -819,7 +822,7 @@
         `;
         
         episodeSelector.style.display = 'block';
-        watchBtn.classList.remove('visible');
+        watchBtn.style.display = 'none';
         currentTvId = id;
         await loadTVSeasons(id);
       }
@@ -837,6 +840,11 @@
         document.getElementById('player-iframe').src = currentMovieUrl;
       }
     }
+
+    // Collega il pulsante Guarda alla funzione
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('watch-movie-btn').addEventListener('click', loadMovie);
+    });
 
     async function loadTVSeasons(tvId) {
       try {
@@ -908,7 +916,6 @@
         if (firstEpisode) {
           firstEpisode.classList.add('active');
           const firstUrl = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodes[0].episode_number}`;
-          // Piccolo ritardo per evitare il blocco
           setTimeout(() => {
             document.getElementById('player-iframe').src = firstUrl;
           }, 500);
@@ -922,7 +929,7 @@
       document.getElementById('player').style.display = 'none';
       document.getElementById('home').style.display = 'block';
       document.getElementById('player-iframe').src = '';
-      document.getElementById('watch-movie-btn').classList.remove('visible');
+      document.getElementById('watch-movie-btn').style.display = 'block';
       currentMovieUrl = '';
     }
 
