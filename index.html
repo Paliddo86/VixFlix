@@ -256,11 +256,12 @@
       padding: 2rem 4%;
     }
 
-    /* Player */
+    /* Player - Versione senza iframe */
     #player {
       display: none;
       padding: 2rem 4%;
-      min-height: 100vh;
+      min-height: 60vh;
+      text-align: center;
     }
 
     .player-header {
@@ -311,6 +312,7 @@
       gap: 2rem;
       margin-bottom: 1rem;
       flex-wrap: wrap;
+      justify-content: center;
     }
 
     .player-info .meta span {
@@ -325,19 +327,37 @@
       line-height: 1.6;
       opacity: 0.9;
       font-size: 1.1rem;
+      max-width: 800px;
+      margin: 0 auto;
     }
 
-    .player-content {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 2rem;
+    .player-actions {
+      margin: 2rem 0;
     }
 
-    .video-container {
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    .watch-btn {
+      display: inline-block;
+      background: #e50914;
+      color: white;
+      padding: 18px 50px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-size: 1.4rem;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(229, 9, 20, 0.4);
+      border: none;
+      cursor: pointer;
+    }
+
+    .watch-btn:hover {
+      background: #ff0a1a;
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 6px 30px rgba(229, 9, 20, 0.6);
+    }
+
+    .watch-btn i {
+      margin-right: 10px;
     }
 
     .episode-selector {
@@ -345,7 +365,8 @@
       border-radius: 12px;
       padding: 1.5rem;
       backdrop-filter: blur(10px);
-      height: fit-content;
+      max-width: 600px;
+      margin: 2rem auto;
     }
 
     .episode-selector h3 {
@@ -378,7 +399,10 @@
       border-color: #e50914;
     }
 
-    .episodes-list {
+    .episodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
       max-height: 400px;
       overflow-y: auto;
       scrollbar-width: thin;
@@ -387,12 +411,12 @@
 
     .episode-item {
       padding: 12px;
-      margin-bottom: 8px;
       background: rgba(255,255,255,0.05);
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.3s ease;
       border: 2px solid transparent;
+      text-align: center;
     }
 
     .episode-item:hover {
@@ -409,36 +433,12 @@
       font-weight: bold;
       color: #e50914;
       margin-bottom: 4px;
+      font-size: 0.9rem;
     }
 
     .episode-title {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       opacity: 0.9;
-    }
-
-    .video-container iframe {
-      width: 100%;
-      height: 60vh;
-      border: none;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .player-content {
-        grid-template-columns: 1fr;
-      }
-      
-      .hero-content h1 {
-        font-size: 2.5rem;
-      }
-      
-      #search {
-        width: 250px;
-      }
-      
-      .card {
-        min-width: 150px;
-      }
     }
 
     /* Loading Animation */
@@ -454,6 +454,30 @@
 
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-content h1 {
+        font-size: 2.5rem;
+      }
+      
+      #search {
+        width: 250px;
+      }
+      
+      .card {
+        min-width: 150px;
+      }
+
+      .player-info h1 {
+        font-size: 1.8rem;
+      }
+
+      .watch-btn {
+        padding: 14px 35px;
+        font-size: 1.1rem;
+      }
     }
   </style>
 </head>
@@ -522,6 +546,7 @@
 
     <div id="results"></div>
 
+    <!-- PLAYER SENZA IFRAME -->
     <div id="player">
       <div class="player-header">
         <button class="back-btn" onclick="goBack()">
@@ -534,22 +559,23 @@
         <div class="meta" id="player-meta"></div>
         <div class="overview" id="player-overview"></div>
       </div>
-      
-      <div class="player-content">
-        <div class="video-container">
-          <iframe id="player-iframe" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                  allowfullscreen>
-          </iframe>
+
+      <div class="player-actions">
+        <button id="watch-btn" class="watch-btn">
+          ▶ Guarda
+        </button>
+        <p style="margin-top: 1rem; opacity: 0.7; font-size: 0.9rem;">
+          🔗 Verrai reindirizzato su VixSrc per la riproduzione
+        </p>
+      </div>
+
+      <div class="episode-selector" id="episode-selector" style="display: none;">
+        <h3>📺 Seleziona episodio</h3>
+        <div class="season-selector">
+          <label>Stagione:</label>
+          <select id="season-select"></select>
         </div>
-        <div class="episode-selector" id="episode-selector" style="display: none;">
-          <h3>Seleziona episodio</h3>
-          <div class="season-selector">
-            <label>Stagione:</label>
-            <select id="season-select"></select>
-          </div>
-          <div class="episodes-list" id="episodes-list"></div>
-        </div>
+        <div class="episodes-grid" id="episodes-grid"></div>
       </div>
     </div>
   </main>
@@ -566,6 +592,7 @@
 
     let currentItem = null;
     let currentSeasons = [];
+    let currentWatchUrl = '';
 
     // Header scroll effect
     window.addEventListener('scroll', () => {
@@ -677,7 +704,6 @@
       return await res.json();
     }
 
-    // 🔴 CORREZIONE PRINCIPALE: Nuovo formato URL per VixSrc
     async function play(item) {
       currentItem = item;
       const isMovie = item.title !== undefined;
@@ -702,6 +728,11 @@
           <span>⏱️ ${duration}</span>
           <span>${rating}</span>
         `;
+        
+        // Genera URL per film
+        currentWatchUrl = `https://vixsrc.to/embed/movie/${id}`;
+        document.getElementById('episode-selector').style.display = 'none';
+        
       } else {
         const year = details.first_air_date ? new Date(details.first_air_date).getFullYear() : 'N/A';
         const seasons = details.number_of_seasons ? `${details.number_of_seasons} stagioni` : 'N/A';
@@ -713,22 +744,23 @@
           <span>🎭 ${seasons}</span>
           <span>${rating}</span>
         `;
+        
+        document.getElementById('episode-selector').style.display = 'block';
+        await loadTVSeasons(id);
       }
+      
+      // Configura il pulsante Guarda
+      const watchBtn = document.getElementById('watch-btn');
+      watchBtn.onclick = () => {
+        if (currentWatchUrl) {
+          window.open(currentWatchUrl, '_blank');
+        }
+      };
       
       document.getElementById('home').style.display = 'none';
       document.getElementById('results').style.display = 'none';
       document.getElementById('player').style.display = 'block';
-
-      if (isMovie) {
-        document.getElementById('episode-selector').style.display = 'none';
-        // 🔴 NUOVO FORMATO URL PER FILM
-        const url = `https://vixsrc.to/embed/movie/${id}`;
-        document.getElementById('player-iframe').src = url;
-      } else {
-        document.getElementById('episode-selector').style.display = 'block';
-        await loadTVSeasons(id);
-      }
-
+      
       window.scrollTo(0, 0);
     }
 
@@ -749,13 +781,11 @@
 
         if (currentSeasons.length > 0) {
           await loadSeasonEpisodes(tvId, currentSeasons[0].season_number);
-          playEpisode(tvId, 1, 1);
         }
 
         seasonSelect.addEventListener('change', async (e) => {
           const seasonNumber = parseInt(e.target.value);
           await loadSeasonEpisodes(tvId, seasonNumber);
-          playEpisode(tvId, seasonNumber, 1);
         });
       } catch (error) {
         console.error('Errore nel caricamento delle stagioni:', error);
@@ -765,42 +795,40 @@
     async function loadSeasonEpisodes(tvId, seasonNumber) {
       try {
         const episodes = await fetchSeasonEpisodes(tvId, seasonNumber);
-        const episodesList = document.getElementById('episodes-list');
-        episodesList.innerHTML = '';
+        const episodesGrid = document.getElementById('episodes-grid');
+        episodesGrid.innerHTML = '';
 
         episodes.forEach(episode => {
           const episodeDiv = document.createElement('div');
           episodeDiv.className = 'episode-item';
           episodeDiv.innerHTML = `
-            <div class="episode-number">Episodio ${episode.episode_number}</div>
+            <div class="episode-number">Ep. ${episode.episode_number}</div>
             <div class="episode-title">${episode.name || `Episodio ${episode.episode_number}`}</div>
           `;
           episodeDiv.onclick = () => {
             document.querySelectorAll('.episode-item').forEach(el => el.classList.remove('active'));
             episodeDiv.classList.add('active');
-            playEpisode(tvId, seasonNumber, episode.episode_number);
+            // Genera URL per l'episodio selezionato
+            currentWatchUrl = `https://vixsrc.to/embed/tv/${tvId}/${seasonNumber}/${episode.episode_number}`;
           };
-          episodesList.appendChild(episodeDiv);
+          episodesGrid.appendChild(episodeDiv);
         });
 
+        // Seleziona automaticamente il primo episodio
         if (episodes.length > 0) {
-          episodesList.firstChild.classList.add('active');
+          const firstEpisode = episodesGrid.firstChild;
+          firstEpisode.classList.add('active');
+          currentWatchUrl = `https://vixsrc.to/embed/tv/${tvId}/${seasonNumber}/${episodes[0].episode_number}`;
         }
       } catch (error) {
         console.error('Errore nel caricamento degli episodi:', error);
       }
     }
 
-    // 🔴 NUOVO FORMATO URL PER SERIE TV
-    function playEpisode(tvId, seasonNumber, episodeNumber) {
-      const url = `https://vixsrc.to/embed/tv/${tvId}/${seasonNumber}/${episodeNumber}`;
-      document.getElementById('player-iframe').src = url;
-    }
-
     function goBack() {
       document.getElementById('player').style.display = 'none';
       document.getElementById('home').style.display = 'block';
-      document.getElementById('player-iframe').src = '';
+      currentWatchUrl = '';
     }
 
     // Search functionality
