@@ -340,6 +340,32 @@
       border: none;
     }
 
+    /* Pulsante Guarda sotto il player */
+    .watch-movie-btn {
+      display: none;
+      width: 100%;
+      margin-top: 1rem;
+      padding: 14px;
+      background: #e50914;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .watch-movie-btn:hover {
+      background: #ff0a1a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(229, 9, 20, 0.4);
+    }
+
+    .watch-movie-btn.visible {
+      display: block;
+    }
+
     .episode-selector {
       background: rgba(255,255,255,0.1);
       border-radius: 12px;
@@ -415,6 +441,7 @@
       border-radius: 8px;
       border: 2px solid transparent;
       transition: all 0.3s ease;
+      cursor: pointer;
       gap: 10px;
     }
 
@@ -429,7 +456,6 @@
 
     .episode-info {
       flex: 1;
-      cursor: pointer;
       min-width: 0;
     }
 
@@ -447,31 +473,23 @@
       text-overflow: ellipsis;
     }
 
-    .episode-watch-btn {
-      background: #e50914;
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: bold;
-      transition: all 0.3s ease;
+    /* Icona play accanto all'episodio */
+    .episode-play-icon {
+      color: #e50914;
+      font-size: 1.2rem;
       flex-shrink: 0;
-      white-space: nowrap;
+      opacity: 0.6;
+      transition: opacity 0.3s ease;
     }
 
-    .episode-watch-btn:hover {
-      background: #ff0a1a;
-      transform: scale(1.05);
-      box-shadow: 0 2px 10px rgba(229, 9, 20, 0.4);
+    .episode-item:hover .episode-play-icon {
+      opacity: 1;
     }
 
-    .episode-watch-btn:active {
-      transform: scale(0.95);
+    .episode-item.active .episode-play-icon {
+      opacity: 1;
     }
 
-    /* Mobile responsive */
     @media (max-width: 768px) {
       .player-content {
         grid-template-columns: 1fr;
@@ -602,11 +620,17 @@
       </div>
       
       <div class="player-content">
-        <div class="video-container">
-          <iframe id="player-iframe" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                  allowfullscreen>
-          </iframe>
+        <div>
+          <div class="video-container">
+            <iframe id="player-iframe" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowfullscreen>
+            </iframe>
+          </div>
+          <!-- Pulsante Guarda per i film -->
+          <button id="watch-movie-btn" class="watch-movie-btn" onclick="loadMovie()">
+            ▶ Guarda
+          </button>
         </div>
         <div class="episode-selector" id="episode-selector" style="display: none;">
           <h3>📺 Episodi</h3>
@@ -633,6 +657,8 @@
     let currentItem = null;
     let currentSeasons = [];
     let currentTvId = null;
+    let currentMovieUrl = '';
+    let isMovie = false;
 
     window.addEventListener('scroll', () => {
       const header = document.getElementById('header');
@@ -744,7 +770,7 @@
 
     async function play(item) {
       currentItem = item;
-      const isMovie = item.title !== undefined;
+      isMovie = item.title !== undefined;
       const id = item.id;
       
       const details = await fetchItemDetails(item);
@@ -754,6 +780,9 @@
       
       const metaDiv = document.getElementById('player-meta');
       metaDiv.innerHTML = '';
+      
+      const watchBtn = document.getElementById('watch-movie-btn');
+      const episodeSelector = document.getElementById('episode-selector');
       
       if (isMovie) {
         const year = details.release_date ? new Date(details.release_date).getFullYear() : 'N/A';
@@ -767,11 +796,15 @@
           <span>${rating}</span>
         `;
         
-        document.getElementById('episode-selector').style.display = 'none';
+        episodeSelector.style.display = 'none';
+        currentMovieUrl = `https://vixsrc.to/movie/${id}`;
         
-        // 🔴 Link SENZA /embed per i film
-        const url = `https://vixsrc.to/movie/${id}`;
-        document.getElementById('player-iframe').src = url;
+        // Mostra il pulsante Guarda per i film
+        watchBtn.classList.add('visible');
+        watchBtn.textContent = '▶ Guarda';
+        
+        // Non caricare automaticamente, aspetta il click
+        document.getElementById('player-iframe').src = '';
         
       } else {
         const year = details.first_air_date ? new Date(details.first_air_date).getFullYear() : 'N/A';
@@ -785,7 +818,8 @@
           <span>${rating}</span>
         `;
         
-        document.getElementById('episode-selector').style.display = 'block';
+        episodeSelector.style.display = 'block';
+        watchBtn.classList.remove('visible');
         currentTvId = id;
         await loadTVSeasons(id);
       }
@@ -795,6 +829,13 @@
       document.getElementById('player').style.display = 'block';
       
       window.scrollTo(0, 0);
+    }
+
+    // Funzione per caricare il film quando si clicca su Guarda
+    function loadMovie() {
+      if (currentMovieUrl) {
+        document.getElementById('player-iframe').src = currentMovieUrl;
+      }
     }
 
     async function loadTVSeasons(tvId) {
@@ -843,43 +884,37 @@
           const episodeDiv = document.createElement('div');
           episodeDiv.className = 'episode-item';
           
-          // 🔴 Link SENZA /embed per le serie TV
           const episodeUrl = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episode.episode_number}`;
           
           episodeDiv.innerHTML = `
-            <div class="episode-info" onclick="playEpisode('${episodeUrl}', this)">
+            <div class="episode-info">
               <div class="episode-number">Ep. ${episode.episode_number}</div>
               <div class="episode-title">${episode.name || `Episodio ${episode.episode_number}`}</div>
             </div>
-            <button class="episode-watch-btn" onclick="playEpisode('${episodeUrl}', this.parentElement)">▶ Guarda</button>
+            <span class="episode-play-icon">▶</span>
           `;
+          
+          episodeDiv.onclick = () => {
+            document.querySelectorAll('.episode-item').forEach(el => el.classList.remove('active'));
+            episodeDiv.classList.add('active');
+            document.getElementById('player-iframe').src = episodeUrl;
+          };
           
           episodesList.appendChild(episodeDiv);
         });
 
-        // Seleziona e carica il primo episodio automaticamente
+        // Carica il primo episodio automaticamente dopo un breve ritardo
         const firstEpisode = episodesList.firstChild;
         if (firstEpisode) {
           firstEpisode.classList.add('active');
           const firstUrl = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodes[0].episode_number}`;
-          document.getElementById('player-iframe').src = firstUrl;
+          // Piccolo ritardo per evitare il blocco
+          setTimeout(() => {
+            document.getElementById('player-iframe').src = firstUrl;
+          }, 500);
         }
       } catch (error) {
         console.error('Errore nel caricamento degli episodi:', error);
-      }
-    }
-
-    function playEpisode(url, element) {
-      // Aggiorna l'iframe
-      document.getElementById('player-iframe').src = url;
-      
-      // Aggiorna lo stato attivo
-      if (element) {
-        const parent = element.closest('.episode-item');
-        if (parent) {
-          document.querySelectorAll('.episode-item').forEach(el => el.classList.remove('active'));
-          parent.classList.add('active');
-        }
       }
     }
 
@@ -887,6 +922,8 @@
       document.getElementById('player').style.display = 'none';
       document.getElementById('home').style.display = 'block';
       document.getElementById('player-iframe').src = '';
+      document.getElementById('watch-movie-btn').classList.remove('visible');
+      currentMovieUrl = '';
     }
 
     document.getElementById('search').addEventListener('keydown', async e => {
