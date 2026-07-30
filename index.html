@@ -340,7 +340,7 @@
       border: none;
     }
 
-    /* Pulsante Guarda sotto il player */
+    /* Pulsante Guarda sotto il player - sempre visibile ma nascosto per le serie */
     .watch-movie-btn {
       display: block;
       width: 100%;
@@ -606,7 +606,7 @@
       
       <div class="player-content">
         <div>
-          <div class="video-container" id="video-container">
+          <div class="video-container">
             <iframe id="player-iframe" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowfullscreen
@@ -753,26 +753,6 @@
       return await res.json();
     }
 
-    // Funzione per caricare un URL nell'iframe con doppio click simulato
-    function loadUrlInIframe(url) {
-      const iframe = document.getElementById('player-iframe');
-      if (!url) return;
-      
-      // Prima ricarica: carica l'URL
-      iframe.src = url;
-      
-      // Secondo "click" simulato: dopo 200ms ricarica la stessa URL
-      // Questo simula il doppio click che spesso sblocca il player
-      setTimeout(() => {
-        iframe.src = url;
-      }, 200);
-      
-      // Terzo tentativo dopo 500ms per essere sicuri
-      setTimeout(() => {
-        iframe.src = url;
-      }, 500);
-    }
-
     async function play(item) {
       currentItem = item;
       isMovie = item.title !== undefined;
@@ -805,6 +785,7 @@
         episodeSelector.style.display = 'none';
         currentMovieUrl = `https://vixsrc.to/movie/${id}`;
         
+        // Mostra il pulsante Guarda
         watchBtn.style.display = 'block';
         watchBtn.textContent = '▶ Guarda';
         
@@ -836,14 +817,14 @@
       window.scrollTo(0, 0);
     }
 
-    // Funzione per caricare il film con doppio click simulato
+    // Funzione per caricare il film (click singolo)
     function loadMovie() {
       if (currentMovieUrl) {
-        loadUrlInIframe(currentMovieUrl);
+        document.getElementById('player-iframe').src = currentMovieUrl;
       }
     }
 
-    // Collega il pulsante Guarda alla funzione
+    // Collega il pulsante Guarda
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('watch-movie-btn').addEventListener('click', loadMovie);
     });
@@ -906,20 +887,20 @@
           episodeDiv.onclick = () => {
             document.querySelectorAll('.episode-item').forEach(el => el.classList.remove('active'));
             episodeDiv.classList.add('active');
-            // Carica l'episodio con doppio click simulato
-            loadUrlInIframe(episodeUrl);
+            // Carica l'episodio (click singolo)
+            document.getElementById('player-iframe').src = episodeUrl;
           };
           
           episodesList.appendChild(episodeDiv);
         });
 
-        // Carica il primo episodio automaticamente con doppio click simulato
+        // Carica il primo episodio automaticamente (click singolo)
         const firstEpisode = episodesList.firstChild;
         if (firstEpisode) {
           firstEpisode.classList.add('active');
           const firstUrl = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodes[0].episode_number}`;
           setTimeout(() => {
-            loadUrlInIframe(firstUrl);
+            document.getElementById('player-iframe').src = firstUrl;
           }, 500);
         }
       } catch (error) {
